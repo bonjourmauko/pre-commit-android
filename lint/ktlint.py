@@ -33,7 +33,7 @@ def download_ktlint_if_not_found():
 
 def run_ktlint():
     download_ktlint_if_not_found()
-    ret_code, output = run_command("java -jar " + KTLINT_JAR + " --format --android")
+    ret_code, output = run_command("java --enable-native-access=ALL-UNNAMED -jar " + KTLINT_JAR + " --format")
     if output:
         print(output)
         return 1
