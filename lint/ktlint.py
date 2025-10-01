@@ -3,7 +3,7 @@ import subprocess
 import sys
 import requests
 
-KTLINT_VER = "0.38.1"
+KTLINT_VER = "1.7.1"
 KTLINT_JAR = os.path.join(os.path.expanduser("~/.cache/pre-commit"), "ktlint")
 KTLINT_TMP = os.path.join(os.path.expanduser("~/.cache/pre-commit"), "ktlint.tmp")
 DOWNLOAD_URL = "https://github.com/pinterest/ktlint/releases/download/{}/ktlint"
