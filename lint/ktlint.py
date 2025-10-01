@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import requests
+import re
 
 KTLINT_VER = "1.7.1"
 KTLINT_JAR = os.path.join(os.path.expanduser("~/.cache/pre-commit"), "ktlint")
@@ -30,6 +31,20 @@ def download_ktlint_if_not_found():
     os.rename(KTLINT_TMP, KTLINT_JAR)
 
 
+def get_java_version():
+    try:
+        output = subprocess.check_output("java -version", stderr=subprocess.STDOUT, shell=True).decode()
+        match = re.search(r'version "(.*?)"', output)
+        if match:
+            version_str = match.group(1)
+            if version_str.startswith("1."):
+                return int(version_str.split(".")[1])
+            else:
+                return int(version_str.split(".")[0])
+    except Exception:
+        return None
+
+
 def get_tracked_kotlin_files():
     try:
         output = subprocess.check_output(
@@ -42,14 +57,29 @@ def get_tracked_kotlin_files():
 
 def run_ktlint():
     download_ktlint_if_not_found()
-    kotlin_files = get_tracked_kotlin_files()
 
+    kotlin_files = get_tracked_kotlin_files()
     if not kotlin_files:
         print("No tracked Kotlin files found.")
         return 0
 
+    java_version = get_java_version()
+    jvm_flags = []
+
+    if java_version is not None:
+        if java_version >= 16:
+            jvm_flags.append("--add-opens=java.base/java.lang=ALL-UNNAMED")
+        if java_version >= 24:
+            jvm_flags.append("--enable-preview")
+            jvm_flags.append("--sun-misc-unsafe-memory-access=allow")
+        if java_version >= 17:
+            jvm_flags.append("--enable-native-access=ALL-UNNAMED")
+
+    jvm_flags_str = " ".join(jvm_flags)
     files_str = " ".join(f'"{f}"' for f in kotlin_files)
-    command = f"java --enable-native-access=ALL-UNNAMED -jar {KTLINT_JAR} --format {files_str}"
+
+    command = f"java {jvm_flags_str} -jar {KTLINT_JAR} --format {files_str}"
+
     ret_code, output = run_command(command)
 
     if output:
